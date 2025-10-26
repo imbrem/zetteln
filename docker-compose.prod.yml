@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  dolt:
+    image: dolthub/dolt-sql-server:latest
+    container_name: zetteln-dolt
+    restart: unless-stopped
+    volumes:
+      - dolt-data:/var/lib/dolt
+      - dolt-socket:/var/run/mysqld
+    environment:
+      DOLT_ROOT_PATH: /var/lib/dolt
+    command: ["--socket=/var/run/mysqld/mysqld.sock", "--data-dir=/var/lib/dolt"]
+    networks:
+      - zetteln-network
+    healthcheck:
+      test: ["CMD-SHELL", "dolt sql -q 'SELECT 1' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  client:
+    image: imbrem/zetteln-client:main
+    container_name: zetteln-client-builder
+    command: ["true"]  # Just build, don't run
+    volumes:
+      - client-build:/app/build
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: zetteln-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - client-build:/srv/www:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      DOMAIN: ${DOMAIN:-:80}
+    networks:
+      - zetteln-network
+    depends_on:
+      - api
+      - client
+
+  api:
+    image: imbrem/zetteln-api:main
+    container_name: zetteln-api
+    restart: unless-stopped
+    environment:
+      RUST_LOG: info
+      DATABASE_SOCKET: /var/run/mysqld/mysqld.sock
+    volumes:
+      - dolt-socket:/var/run/mysqld:ro
+    networks:
+      - zetteln-network
+    expose:
+      - "8080"
+    depends_on:
+      dolt:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/version || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  zetteln-network:
+    driver: bridge
+
+volumes:
+  dolt-data:
+  dolt-socket:
+  client-build:
+  caddy-data:
+  caddy-config:

@@ -1,1 +1,19 @@
+# Rust
 target
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

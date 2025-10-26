@@ -1,5 +1,5 @@
-# Development configuration
-:80 {
+# Production configuration - use DOMAIN env var, defaults to :80 for dev
+{$DOMAIN:":80"} {
     # API routes - reverse proxy to Rust backend
     handle /api/* {
         reverse_proxy api:8080

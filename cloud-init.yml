@@ -1,0 +1,99 @@
+#cloud-config
+
+# Zetteln - One-line Hetzner deployment
+# Set DOMAIN below to your domain name for automatic HTTPS
+# Example: DOMAIN=zetteln.yourdomain.com
+# Leave as :80 for IP-only access without HTTPS
+
+users:
+  - name: zetteln
+    groups: docker
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-rsa YOUR_SSH_PUBLIC_KEY_HERE  # Replace with your SSH public key
+
+packages:
+  - docker.io
+  - docker-compose
+  - curl
+  - wget
+
+package_update: true
+package_upgrade: true
+
+runcmd:
+  # Enable and start Docker
+  - systemctl enable docker
+  - systemctl start docker
+  
+  # Create application directory
+  - mkdir -p /opt/zetteln
+  - cd /opt/zetteln
+  
+  # Download production configuration
+  - curl -fsSL https://raw.githubusercontent.com/imbrem/zetteln/main/docker-compose.prod.yml -o docker-compose.yml
+  - curl -fsSL https://raw.githubusercontent.com/imbrem/zetteln/main/Caddyfile -o Caddyfile
+  
+  # Create .env file with domain configuration
+  # Change DOMAIN to your domain name for automatic HTTPS (e.g., zetteln.yourdomain.com)
+  - echo "DOMAIN=:80" > .env
+  
+  # Pull and start services
+  - docker compose pull
+  - docker compose up -d
+  
+  # Set up log rotation
+  - |
+    cat > /etc/logrotate.d/docker-containers << 'EOF'
+    /var/lib/docker/containers/*/*.log {
+      rotate 7
+      daily
+      compress
+      missingok
+      delaycompress
+      copytruncate
+    }
+    EOF
+  
+  # Set ownership
+  - chown -R zetteln:zetteln /opt/zetteln
+
+write_files:
+  - path: /etc/systemd/system/zetteln.service
+    content: |
+      [Unit]
+      Description=Zetteln Application
+      Requires=docker.service
+      After=docker.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=/opt/zetteln
+      ExecStart=/usr/bin/docker compose up -d
+      ExecStop=/usr/bin/docker compose down
+      User=root
+
+      [Install]
+      WantedBy=multi-user.target
+    permissions: '0644'
+
+final_message: |
+  ═══════════════════════════════════════════════════════════
+  🗂️  Zetteln is now running!
+  
+  Access your application at: http://YOUR_SERVER_IP
+  
+  Useful commands:
+    - Check status:  docker compose -f /opt/zetteln/docker-compose.yml ps
+    - View logs:     docker compose -f /opt/zetteln/docker-compose.yml logs -f
+  
+  To enable HTTPS with a domain name:
+    1. Point your domain to this server's IP
+    2. Edit /opt/zetteln/.env and set DOMAIN=yourdomain.com
+    3. Run: cd /opt/zetteln && docker compose restart caddy
+  
+  Dolt provides built-in version control - use Git-like commands:
+    docker compose -f /opt/zetteln/docker-compose.yml exec dolt dolt log
+  ═══════════════════════════════════════════════════════════
