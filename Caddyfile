@@ -1,0 +1,22 @@
+# Development configuration
+:80 {
+    # Reverse proxy all requests to the Rust API
+    reverse_proxy api:8080
+
+    # Enable logging
+    log {
+        output stdout
+        format json
+    }
+
+    # Enable compression
+    encode gzip zstd
+
+    # CORS headers (adjust as needed)
+    header {
+        # Security headers
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+}

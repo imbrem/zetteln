@@ -1,0 +1,14 @@
+[package]
+name = "zetteln-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.7"
+color-eyre = "0.6.5"
+mysql_async = "0.36.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.48.0", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.20"
