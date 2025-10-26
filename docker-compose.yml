@@ -19,6 +19,16 @@ services:
       retries: 10
       start_period: 10s
 
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: builder
+    container_name: zetteln-client-builder
+    command: ["true"]  # Just build, don't run
+    volumes:
+      - client-build:/app/build
+
   caddy:
     image: caddy:2-alpine
     container_name: zetteln-caddy
@@ -29,12 +39,14 @@ services:
       - "8443:443/udp"  # HTTP/3
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - client-build:/srv/www:ro
       - caddy-data:/data
       - caddy-config:/config
     networks:
       - zetteln-network
     depends_on:
       - api
+      - client
 
   api:
     build:
@@ -68,5 +80,6 @@ networks:
 volumes:
   dolt-data:
   dolt-socket:
+  client-build:
   caddy-data:
   caddy-config:
