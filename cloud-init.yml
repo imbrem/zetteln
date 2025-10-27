@@ -30,10 +30,8 @@ runcmd:
   # Download production configuration
   - curl -fsSL https://raw.githubusercontent.com/imbrem/zetteln/main/docker-compose.prod.yml -o docker-compose.yml
   - curl -fsSL https://raw.githubusercontent.com/imbrem/zetteln/main/Caddyfile -o Caddyfile
-  
-  # Create .env file with domain configuration
-  # Change DOMAIN to your domain name for automatic HTTPS (e.g., zetteln.yourdomain.com)
-  - echo "DOMAIN=:80" > .env
+  - curl -fsSL https://raw.githubusercontent.com/imbrem/zetteln/main/.env.example -o .env.example
+  - cp .env.example .env
   
   # Pull and start services
   - docker compose pull

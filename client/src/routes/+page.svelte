@@ -42,7 +42,7 @@
 					<span class="version">{version}</span>
 				</div>
 				<div class="info-item">
-					<strong>Database:</strong>
+					<strong>Dolt version:</strong>
 					<span class="database">{database}</span>
 				</div>
 			</div>

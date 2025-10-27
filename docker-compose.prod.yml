@@ -19,11 +19,16 @@ services:
       start_period: 10s
 
   client:
-    image: imbrem/zetteln-client:main
-    container_name: zetteln-client-builder
-    command: ["true"]  # Just build, don't run
+    image: imbrem/zetteln-client-data:main
+    container_name: zetteln-client
+    restart: "no"
+    # Populate the named volume /srv/www with the static files from the image
+    # This is a one-shot container: it copies files and exits successfully.
+    # docker compose up -d will recreate it when the image changes, triggering the copy.
     volumes:
-      - client-build:/app/build
+      - client-build:/srv/www
+    networks:
+      - zetteln-network
 
   caddy:
     image: caddy:2-alpine
@@ -43,8 +48,9 @@ services:
     networks:
       - zetteln-network
     depends_on:
-      - api
-      - client
+      client:
+        condition: service_completed_successfully
+      api:
 
   api:
     image: imbrem/zetteln-api:main

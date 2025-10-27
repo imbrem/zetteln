@@ -50,7 +50,7 @@ hcloud server create \
 
 The `cloud-init.yml` file will automatically:
 - Install Docker and Docker Compose
-- Pull images from `imbrem/zetteln-api` and `imbrem/zetteln-client`
+- Pull images from `imbrem/zetteln-api` and `imbrem/zetteln-client-data` (or your chosen client-data tag)
 - Start all services
 - Configure automatic log rotation
 
@@ -58,7 +58,7 @@ To enable HTTPS with a custom domain:
 1. Point your domain's A record to your server's IP
 2. SSH into the server and edit `/opt/zetteln/.env`
 3. Set `DOMAIN=yourdomain.com`
-4. Restart Caddy: `cd /opt/zetteln && docker compose restart caddy`
+4. Restart Caddy: `cd /opt/zetteln && docker compose up -d caddy`
 
 ### Manual Production Deployment
 
@@ -175,9 +175,11 @@ docker compose up -d
 # Pull latest images from imbrem/zetteln-*
 docker compose -f docker-compose.prod.yml pull
 
-# Recreate containers
+# Recreate containers (client will repopulate static files from the new image)
 docker compose -f docker-compose.prod.yml up -d
 ```
+
+Note: The production layout uses a small, separate client-data image (`imbrem/zetteln-client-data:<tag>`) that contains only the generated static assets. The `client` service is a one-shot container that copies static files into the `client-build` volume and then exits successfully. When you run `docker compose pull && up -d`, Compose will recreate the client container if the image changed, which triggers the copy automatically. Caddy then serves the updated files from the volume. This keeps client updates decoupled from Caddy updates and requires no manual deploy script — just `pull && up -d`.
 
 ### Upgrade Dolt Version
 
@@ -197,6 +199,36 @@ docker compose up -d
 ```
 
 ## Security
+
+## Automated safe deploy script
+
+A small helper script is included at `deploy.sh` which you can place in `/opt/zetteln` on the server and run with `sudo` to perform a safe update. It pulls new images, recreates services as needed, and (optionally) recreates the `client-build` volume so the static frontend files are repopulated from the client image.
+
+Usage examples:
+
+- Standard update (pull images and recreate containers that changed):
+
+```bash
+cd /opt/zetteln
+sudo ./deploy.sh
+```
+
+- Update and force client static files to be refreshed from the image:
+
+```bash
+cd /opt/zetteln
+sudo ./deploy.sh --recreate-client
+```
+
+What the script does:
+- Runs `docker compose -f docker-compose.prod.yml pull` to fetch the latest images
+- If `--recreate-client` is passed: stops `caddy` and `client`, removes any `*client-build*` named volume, recreates the `client` service (so Docker copies static files into a fresh volume), and recreates `caddy` so it serves the new files
+- Runs `docker compose -f docker-compose.prod.yml up -d --remove-orphans` to ensure the whole stack is up-to-date
+
+Notes:
+- The script is intentionally conservative and idempotent. It prints status and leaves the system in a running state.
+- For production, prefer immutable image tags (SHA or semver) and let your CI update the compose file or pass tags into the deploy flow.
+
 
 - **Database**: Accessible only via UNIX socket (not exposed to network)
 - **API**: Internal-only communication with Caddy
