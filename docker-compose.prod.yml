@@ -51,6 +51,7 @@ services:
       client:
         condition: service_completed_successfully
       api:
+        condition: service_started
 
   api:
     image: imbrem/zetteln-api:main
