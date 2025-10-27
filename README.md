@@ -42,9 +42,10 @@ Create a new Hetzner Cloud server with this cloud-init script (edit SSH key and 
 ```bash
 hcloud server create \
   --name zetteln \
-  --type cx11 \
-  --image ubuntu-22.04 \
-  --user-data-from-file cloud-init.yml
+  --type cpx22 \
+  --image ubuntu-24.04 \
+  --user-data-from-file cloud-init.yml \
+  # --firewall my-firewall (recommended: block all ports except 22, 80, and 443 + ICMP for ping)
 ```
 
 The `cloud-init.yml` file will automatically:

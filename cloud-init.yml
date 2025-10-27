@@ -1,21 +1,17 @@
 #cloud-config
 
-# Zetteln - One-line Hetzner deployment
-# Set DOMAIN below to your domain name for automatic HTTPS
-# Example: DOMAIN=zetteln.yourdomain.com
-# Leave as :80 for IP-only access without HTTPS
-
 users:
   - name: zetteln
     groups: docker
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
-    ssh_authorized_keys:
-      - ssh-rsa YOUR_SSH_PUBLIC_KEY_HERE  # Replace with your SSH public key
+    # You can add your SSH public key(s) here for secure access
+    # ssh_authorized_keys:
+      # - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD... your_key_comment
 
 packages:
   - docker.io
-  - docker-compose
+  - docker-compose-v2
   - curl
   - wget
 
