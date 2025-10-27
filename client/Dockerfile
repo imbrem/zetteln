@@ -37,11 +37,11 @@ set -e
 TARGET=/srv/www
 
 echo "[client] Populating $TARGET from image static assets..."
-# Clean up any leftover temp directory from previous failed runs
-rm -rf "$TARGET.tmp"
-# Copy to a temp location then atomically move into place
-cp -a /static/. "$TARGET.tmp/"
-mv -f "$TARGET.tmp" "$TARGET"
+# Ensure target exists
+mkdir -p "$TARGET"
+# Remove all existing content and copy new files
+rm -rf "$TARGET"/*
+cp -a /static/. "$TARGET/"
 echo "[client] Population complete."
 EOF
 
