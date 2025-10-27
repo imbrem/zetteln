@@ -83,6 +83,10 @@ networks:
 volumes:
   dolt-data:
   dolt-socket:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
   client-build:
   caddy-data:
   caddy-config:
