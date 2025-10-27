@@ -1,6 +1,9 @@
 # Build stage
 FROM oven/bun:1 AS builder
 
+# Cache buster argument
+ARG CACHEBUST=1
+
 WORKDIR /app
 
 # Copy package files

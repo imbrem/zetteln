@@ -1,15 +1,40 @@
 # Production configuration - use DOMAIN env var, defaults to :80 for dev
 {$DOMAIN:":80"} {
-    # API routes - reverse proxy to Rust backend
+    # API routes - reverse proxy to Rust backend with CORS
     handle /api/* {
+        # CORS headers for third-party frontends
+        @cors_preflight method OPTIONS
+        handle @cors_preflight {
+            header {
+                Access-Control-Allow-Origin "*"
+                Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+                Access-Control-Allow-Headers "Content-Type, Authorization"
+                Access-Control-Max-Age "3600"
+            }
+            respond "" 204
+        }
+        
+        # CORS headers for actual requests
+        header {
+            Access-Control-Allow-Origin "*"
+            Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+            Access-Control-Allow-Headers "Content-Type, Authorization"
+            Access-Control-Expose-Headers "Content-Length, Content-Range"
+        }
+        
         reverse_proxy api:8080
     }
     
-    # Serve static frontend files
+    # Serve static frontend files (official frontend)
     handle {
         root * /srv/www
         try_files {path} /index.html
         file_server
+        
+        # CSP only for the official frontend (not API)
+        header {
+            Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https:; frame-ancestors 'none';"
+        }
     }
 
     # Enable logging
@@ -21,10 +46,13 @@
     # Enable compression
     encode gzip zstd
 
-    # Security headers
+    # Global security headers (apply to everything)
     header {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+        -Server  # Remove server header
     }
 }

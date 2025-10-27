@@ -44,6 +44,28 @@ clean-client: ## Remove client build volume (forces rebuild)
 	docker volume rm zetteln_client-build || true
 	docker compose up -d
 
+rebuild-client: ## Rebuild client with cache busting
+	@echo "Stopping services..."
+	docker compose down
+	@echo "Removing old build volume..."
+	docker volume rm zetteln_client-build || true
+	@echo "Rebuilding client (no cache)..."
+	docker compose build --no-cache client
+	@echo "Starting services..."
+	docker compose up -d
+	@echo "✅ Client rebuilt successfully!"
+
+rebuild-client-fast: ## Rebuild client (use cached layers where possible)
+	@echo "Stopping services..."
+	docker compose down
+	@echo "Removing old build volume..."
+	docker volume rm zetteln_client-build || true
+	@echo "Rebuilding client (with cache)..."
+	CACHEBUST=$$(date +%s) docker compose build client
+	@echo "Starting services..."
+	docker compose up -d
+	@echo "✅ Client rebuilt successfully!"
+
 ps: ## Show running containers
 	docker compose ps
 

@@ -1,9 +1,26 @@
 import { defineConfig } from 'vitest/config';
+import { loadEnv } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 
-export default defineConfig({
-	plugins: [sveltekit()],
-	test: {
+export default defineConfig(({ mode }) => {
+	// Load env file from parent directory
+	const env = loadEnv(mode, '../', '');
+	
+	// Allow custom API URL for development, otherwise use local Docker
+	const API_URL = env.VITE_API_URL || `http://localhost:${env.HOST_HTTP_PORT || '8000'}`;
+
+	return {
+		plugins: [sveltekit()],
+		server: {
+			proxy: {
+				'/api': {
+					target: API_URL,
+					changeOrigin: true,
+					ws: true  // Enable WebSocket proxying
+				}
+			}
+		},
+		test: {
 		expect: { requireAssertions: true },
 		projects: [
 			{
@@ -32,4 +49,5 @@ export default defineConfig({
 			}
 		]
 	}
+	};
 });

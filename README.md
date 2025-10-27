@@ -230,23 +230,76 @@ zetteln/
 ### Local Development
 
 ```bash
-# Start with local builds
-docker compose up --build
+# Start Docker services (API, database, reverse proxy)
+docker compose up -d
 
-# Watch logs
+# Option 1: Use built frontend in Docker (slower iteration)
+# Frontend is served at http://localhost:8000
 docker compose logs -f api
+
+# Option 2: Local frontend development with hot reload (faster iteration)
+cd client
+npm install
+npm run dev
+# Frontend with hot reload at http://localhost:5173
+# API requests automatically proxied to http://localhost:8000
+
+# Option 3: Develop against remote/staging API
+# Create .env file in project root:
+echo "VITE_API_URL=https://staging.example.com" > ../.env
+cd client && npm run dev
+# API requests now proxied to staging server
+# Supports WebSocket connections too!
 
 # Access Dolt CLI
 docker compose exec dolt dolt sql
 
-# Rebuild after changes
+# Rebuild API after changes
 docker compose build api
 docker compose up -d api
+
+# Rebuild frontend in Docker after changes (IMPORTANT: must remove volume)
+make rebuild-client-fast
+# Or manually:
+# docker compose down
+# docker volume rm zetteln_client-build
+# docker compose build client
+# docker compose up -d
+```
+
+### Development Proxy Configuration
+
+The local dev server (`npm run dev`) supports proxying API requests:
+
+- **Default**: Proxies to `http://localhost:8000` (local Docker)
+- **Custom Port**: Respects `HOST_HTTP_PORT` env var
+- **Remote API**: Set `VITE_API_URL` to proxy to any URL
+- **WebSocket Support**: Automatically proxies WebSocket connections (`ws: true`)
+
+Examples:
+```bash
+# Develop against local Docker (default)
+npm run dev
+
+# Develop against custom port
+HOST_HTTP_PORT=9000 npm run dev
+
+# Develop against staging server
+VITE_API_URL=https://staging.example.com npm run dev
+
+# Develop against production (read-only operations!)
+VITE_API_URL=https://api.production.com npm run dev
 ```
 
 ### API Endpoints
 
 - `GET /api/version` - Returns API and database version
+
+## Monitoring
+
+### Check Service Health
+
+````
 
 ## Monitoring
 
@@ -302,7 +355,3 @@ ports:
   - "8080:80"  # Change 8000 to 8080
   - "8444:443" # Change 8443 to 8444
 ```
-
-## License
-
-MIT
