@@ -14,7 +14,7 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_NAME_API: imbrem/zetteln-api
-  IMAGE_NAME_CLIENT: imbrem/zetteln-client
+  IMAGE_NAME_CLIENT_DATA: imbrem/zetteln-client-data
 
 jobs:
   build-and-push-api:
@@ -62,7 +62,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-and-push-client:
+  build-and-push-client-data:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -82,11 +82,11 @@ jobs:
           username: imbrem
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Client
+      - name: Extract metadata (tags, labels) for Client Data
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_NAME_CLIENT }}
+          images: ${{ env.IMAGE_NAME_CLIENT_DATA }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -95,12 +95,12 @@ jobs:
             type=semver,pattern={{major}}
             type=sha
 
-      - name: Build and push Client Docker image
+      - name: Build and push Client Data Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./client
           file: ./client/Dockerfile
-          target: builder
+          target: data
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
