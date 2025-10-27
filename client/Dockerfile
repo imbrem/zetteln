@@ -40,8 +40,10 @@ echo "[client] Populating $TARGET from image static assets..."
 mkdir -p "$TARGET"
 # Copy to a temp location then atomically move to avoid partial content
 cp -a /static/. "$TARGET.tmp"
+# Remove old backup if it exists
 rm -rf "$TARGET.old"
-if [ -d "$TARGET" ]; then
+# Move current to .old (if exists), then move .tmp to current
+if [ -d "$TARGET" ] && [ "$(ls -A $TARGET 2>/dev/null)" ]; then
   mv "$TARGET" "$TARGET.old" 2>/dev/null || true
 fi
 mv "$TARGET.tmp" "$TARGET"
